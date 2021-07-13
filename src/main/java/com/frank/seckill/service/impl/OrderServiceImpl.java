@@ -2,6 +2,8 @@ package com.frank.seckill.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.baomidou.mybatisplus.extension.conditions.update.UpdateChainWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.frank.seckill.mapper.OrderMapper;
 import com.frank.seckill.pojo.Order;
@@ -44,7 +46,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         //秒杀商品表减库存
         SeckillGoods seckillGoods = iSeckillGoodsService.getOne(new QueryWrapper<SeckillGoods>().eq("goods_id", goods.getId()));
         seckillGoods.setStockCount(seckillGoods.getStockCount()-1);
-        iSeckillGoodsService.updateById(seckillGoods);
+        //iSeckillGoodsService.updateById(seckillGoods);
+        iSeckillGoodsService.update(new UpdateWrapper<SeckillGoods>().set("stock_count",
+                seckillGoods.getStockCount()).eq("id",seckillGoods.getId()).gt("stock_count",0));
 
 
         //生成订单
