@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.frank.seckill.mapper.GoodsMapper">
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, goods_name, goods_title, goods_img, goods_detail, goods_price, goods_stock
+    </sql>
+
+    <select id="findGoodsVO" resultType="com.frank.seckill.vo.GoodsVO">
+        SELECT g.*, mg.stock_count, mg.start_date, mg.end_date, mg.seckill_price
+        FROM t_seckill_goods mg
+                 LEFT JOIN t_goods g ON mg.goods_id = g.id
+    </select>
+    
+    <select id="findGoodsVOByGoodsId" resultType="com.frank.seckill.vo.GoodsVO">
+        SELECT g.*, mg.stock_count, mg.start_date, mg.end_date, mg.seckill_price FROM t_seckill_goods mg LEFT JOIN t_goods g ON mg.goods_id=g.id where g.id = #{goodsId}
+    </select>
+
+</mapper>
