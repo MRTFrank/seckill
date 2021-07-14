@@ -15,7 +15,9 @@ import com.frank.seckill.service.ISeckillGoodsService;
 import com.frank.seckill.service.ISeckillOrderService;
 import com.frank.seckill.vo.GoodsVO;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 
@@ -39,17 +41,25 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     @Autowired
     private ISeckillOrderService iSeckillOrderService;
 
+    @Autowired
+    private RedisTemplate redisTemplate;
+
 
     @Override
+    @Transactional
     public Order seckill(User user, GoodsVO goods) {
 
         //秒杀商品表减库存
         SeckillGoods seckillGoods = iSeckillGoodsService.getOne(new QueryWrapper<SeckillGoods>().eq("goods_id", goods.getId()));
         seckillGoods.setStockCount(seckillGoods.getStockCount()-1);
         //iSeckillGoodsService.updateById(seckillGoods);
-        iSeckillGoodsService.update(new UpdateWrapper<SeckillGoods>().set("stock_count",
-                seckillGoods.getStockCount()).eq("id",seckillGoods.getId()).gt("stock_count",0));
+//        boolean seckillGoodsResult = iSeckillGoodsService.update(new UpdateWrapper<SeckillGoods>().set("stock_count",
+//                seckillGoods.getStockCount()).eq("id", seckillGoods.getId()).gt("stock_count", 0));
 
+        boolean update = iSeckillGoodsService.update(new UpdateWrapper<SeckillGoods>().setSql("stock_count = stock_count-1").eq("goods_id", goods.getId()).gt("stock_count", 0));
+        if(!update){
+            return null;
+        }
 
         //生成订单
         Order orderInfo = new Order();
@@ -69,7 +79,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         seckillOrder.setOrderId(orderInfo.getId());
         seckillOrder.setUserId(user.getId());
         iSeckillOrderService.save(seckillOrder);
-
+        redisTemplate.opsForValue().set("order:"+user.getId()+":"+goods.getId(),seckillOrder);
         return orderInfo;
     }
 }
