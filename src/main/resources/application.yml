@@ -30,6 +30,34 @@ spring:
         max-wait: 10000ms
         max-idle: 8
         min-idle: 5
+
+  rabbitmq:
+    #服务器
+    host: 127.0.0.1
+    username: guest
+    password: guest
+    virtual-host: /
+    port: 5672
+    # 消费者数量
+    listener:
+      simple:
+        concurrency: 10
+        max-concurrency: 10
+        # 每次从队列中取的消息个数，prefetch来限制Queue每次发送给每个消费者的消息数，设置为1表明，queue每次会发送1个消息给consumer，
+        #等到收到consumer的ack后，queue才会继续发消息给consumer
+        prefetch: 1
+        # 消费者默认启动
+        auto-startup: true
+        #被拒绝重新进入队列
+        default-requeue-rejected: true
+    template:
+      retry:
+        enabled: true
+        initial-interval: 1000ms
+        max-attempts: 3
+        max-interval: 10000ms
+        multiplier: 1
+
 mybatis-plus:
   mapper-locations: classpath*:/mapper/*Mapper.xml
   type-aliases-package: com.frank.seckill.pojo
