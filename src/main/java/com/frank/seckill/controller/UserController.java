@@ -41,4 +41,11 @@ public class UserController {
         mqSender.send("wangyujun");
 
     }
+
+    @RequestMapping("/mq/fanout")
+    @ResponseBody
+    public void mq01(){
+        mqSender.send("zhaobin");
+
+    }
 }
