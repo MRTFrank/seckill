@@ -13,6 +13,7 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.CollectionUtils;
@@ -47,8 +48,11 @@ public class SeckillController implements InitializingBean {
     @Autowired
     private MQSender mqSender;
 
-    //false为有库存
-    private Map<Long,Boolean> EmptyStockMap = new HashMap<>();
+    @Autowired
+    private RedisScript<Long> redisScript;
+
+    // false为有库存
+    private Map<Long, Boolean> EmptyStockMap = new HashMap<>();
 
     @RequestMapping("/doSeckill")
     public RespBean doSeckill(Model model, User user, Long goodsId) {
@@ -63,15 +67,17 @@ public class SeckillController implements InitializingBean {
             return RespBean.error(RespBeanEnum.REPEAT_ERROR);
         }
 
-        //内存标记减少Redis的访问
-        if(EmptyStockMap.get(goodsId)){
+        // 内存标记减少Redis的访问
+        if (EmptyStockMap.get(goodsId)) {
             return RespBean.error(RespBeanEnum.EMPTY_STOCK);
         }
 
-        //预减库存
-        Long stock = valueOperations.decrement("seckillGoods" + goodsId);
-        if(stock < 0){
-            EmptyStockMap.put(goodsId,true);
+        // 预减库存
+//        Long stock = valueOperations.decrement("seckillGoods" + goodsId);
+        Long stock = (Long)redisTemplate.execute(redisScript, Collections.singletonList("seckillGoods" + goodsId),
+            Collections.EMPTY_LIST);
+        if (stock < 0) {
+            EmptyStockMap.put(goodsId, true);
             valueOperations.increment("seckillGoods" + goodsId);
             return RespBean.error(RespBeanEnum.EMPTY_STOCK);
         }
@@ -97,7 +103,7 @@ public class SeckillController implements InitializingBean {
         return RespBean.success(order);
         */
 
-        //return null;
+        // return null;
 
     }
 
@@ -112,10 +118,9 @@ public class SeckillController implements InitializingBean {
         if (CollectionUtils.isEmpty(list)) {
             return;
         }
-        list.forEach(
-            goodsVO -> {
-                redisTemplate.opsForValue().set("seckillGoods" + goodsVO.getId(), goodsVO.getStockCount());
-                EmptyStockMap.put(goodsVO.getId(), false);
-            });
+        list.forEach(goodsVO -> {
+            redisTemplate.opsForValue().set("seckillGoods" + goodsVO.getId(), goodsVO.getStockCount());
+            EmptyStockMap.put(goodsVO.getId(), false);
+        });
     }
 }
